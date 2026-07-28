@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QDB2063 Seismic Methods Calculator & Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        seismic: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            dark: '#0b132b',
+                            card: '#1c2541'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
+    
+    <!-- KaTeX LaTeX Renderer -->
+    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css](https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css)">
+    <script defer src="[https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js)"></script>
+    <script defer src="[https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js](https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js)" onload="triggerMathRender()"></script>
+
+    <style>
+        body { background-color: #0b132b; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { touch-action: none; }
+        .tab-btn.active { border-bottom: 3px solid #38bdf8; color: #38bdf8; background-color: rgba(56, 189, 248, 0.1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-3 bg-cyan-600/20 text-cyan-400 rounded-xl border border-cyan-500/30">
+                    <i class="fa-solid fa-wave-square text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide text-white">QDB2063 SEISMIC METHODS</h1>
+                    <p class="text-xs text-slate-400">Interactive Reflection Seismology & Velocity Analysis Suite</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-lg border border-slate-700 text-xs text-slate-300">
+                <span class="px-2 py-1 bg-cyan-500/20 text-cyan-300 rounded font-mono font-bold">v2.6</span>
+                <span>KaTeX Rendered • Dix Engine</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto border-t border-slate-800/60 no-scrollbar text-sm font-medium">
+            <button onclick="switchTab('nmo')" id="tab-nmo" class="tab-btn active px-5 py-3 whitespace-nowrap transition-colors flex items-center gap-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-chart-line"></i> 1. NMO & CMP Gather
+            </button>
+            <button onclick="switchTab('dix')" id="tab-dix" class="tab-btn px-5 py-3 whitespace-nowrap transition-colors flex items-center gap-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-calculator"></i> 2. Dix Inversion
+            </button>
+            <button onclick="switchTab('thickness')" id="tab-thickness" class="tab-btn px-5 py-3 whitespace-nowrap transition-colors flex items-center gap-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-layer-group"></i> 3. Depth & Thickness
+            </button>
+            <button onclick="switchTab('simulation')" id="tab-simulation" class="tab-btn px-5 py-3 whitespace-nowrap transition-colors flex items-center gap-2 text-slate-300 hover:text-white">
+                <i class="fa-solid fa-earth-americas"></i> 4. Multi-Layer Simulator
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow">
+
+        <!-- TAB 1: NMO CALCULATION & CMP VISUALIZER -->
+        <section id="sec-nmo" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Controls -->
+                <div class="lg:col-span-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg space-y-5">
+                    <div class="border-b border-slate-800 pb-3">
+                        <h2 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> NMO Parameters
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Adjust reflection travel time factors</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label class="text-slate-300">Zero-Offset Time ($t_0$)</label>
+                                <span id="val-t0" class="text-cyan-400 font-mono">1.00 s</span>
+                            </div>
+                            <input type="range" id="input-t0" min="0.1" max="4.0" step="0.05" value="1.0" class="w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label class="text-slate-300">Source-Receiver Offset ($x$)</label>
+                                <span id="val-offset" class="text-cyan-400 font-mono">1500 m</span>
+                            </div>
+                            <input type="range" id="input-offset" min="0" max="4000" step="50" value="1500" class="w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label class="text-slate-300">NMO Velocity ($V_{nmo}$)</label>
+                                <span id="val-vnmo" class="text-cyan-400 font-mono">2500 m/s</span>
+                            </div>
+                            <input type="range" id="input-vnmo" min="1000" max="6000" step="50" value="2500" class="w-full accent-cyan-500 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label class="text-slate-300">Max Offset Display ($X_{max}$)</label>
+                                <span id="val-xmax" class="text-slate-400 font-mono">3000 m</span>
+                            </div>
+                            <input type="range" id="input-xmax" min="1000" max="5000" step="100" value="3000" class="w-full accent-slate-600 bg-slate-800 rounded-lg cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Output Stats -->
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3 font-mono">
+                        <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                            <span class="text-slate-400">Hyperbolic Time $t_x$:</span>
+                            <span id="res-tx" class="text-emerald-400 text-sm font-bold">1.1662 s</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                            <span class="text-slate-400">NMO Time Delay ($\Delta t_{NMO}$):</span>
+                            <span id="res-dtnmo" class="text-amber-400 text-sm font-bold">166.19 ms</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">NMO Stretch ($\Delta t / t_0$):</span>
+                            <span id="res-stretch" class="text-cyan-400 text-sm font-bold">16.62 %</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-cyan-950/40 border border-cyan-800/50 p-3 rounded-xl text-xs text-cyan-200/80 space-y-1">
+                        <p class="font-semibold text-cyan-300"><i class="fa-solid fa-lightbulb"></i> Hyperbolic Traveltime Equation:</p>
+                        <div class="font-mono text-center py-1 text-cyan-100 font-semibold">
+                            $$t_x = \sqrt{t_0^2 + \frac{x^2}{V_{nmo}^2}}$$
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualizers -->
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-network-wired text-cyan-400"></i> Raypath Geometry & Synthetic CMP Gather
+                            </h3>
+                            <div class="flex gap-2">
+                                <button onclick="toggleNmoCorrection()" id="btn-nmo-apply" class="px-3 py-1 bg-slate-800 hover:bg-cyan-600 text-slate-200 hover:text-white rounded text-xs transition border border-slate-700">
+                                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Apply NMO Correction
+                                </button>
+                            </div>
+                        </div>
+                        <div class="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                            <canvas id="canvas-cmp" class="w-full h-[400px] block"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- TAB 2: DIX INVERSION -->
+        <section id="sec-dix" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Inputs -->
+                <div class="lg:col-span-5 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-5">
+                    <div class="border-b border-slate-800 pb-3">
+                        <h2 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                            <i class="fa-solid fa-calculator"></i> Dix Inversion Parameters
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Extract interval velocity ($V_{int}$) from RMS Velocities</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Top TWT $t_1$ (s)</label>
+                            <input type="number" id="dix-t1" value="1.00" step="0.05" min="0.05" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-cyan-400 font-mono focus:border-cyan-500 outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Base TWT $t_2$ (s)</label>
+                            <input type="number" id="dix-t2" value="1.60" step="0.05" min="0.10" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-cyan-400 font-mono focus:border-cyan-500 outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Top $V_{rms1}$ (m/s)</label>
+                            <input type="number" id="dix-vrms1" value="2000" step="50" min="500" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-cyan-400 font-mono focus:border-cyan-500 outline-none">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-slate-300">Base $V_{rms2}$ (m/s)</label>
+                            <input type="number" id="dix-vrms2" value="2500" step="50" min="500" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-cyan-400 font-mono focus:border-cyan-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Dix Formula Box -->
+                    <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2 text-xs">
+                        <div class="text-slate-400 font-semibold">Dix Equation:</div>
+                        <div class="font-mono text-center text-cyan-300 py-1 bg-slate-900 rounded border border-slate-800">
+                            $$V_{int} = \sqrt{\frac{V_{rms2}^2 \cdot t_2 - V_{rms1}^2 \cdot t_1}{t_2 - t_1}}$$
+                        </div>
+                    </div>
+
+                    <!-- Output Panel -->
+                    <div id="dix-result-card" class="bg-cyan-950/30 border border-cyan-800/60 p-4 rounded-xl space-y-3">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-300">Interval Travel Time ($\Delta t$):</span>
+                            <span id="dix-res-dt" class="text-amber-400 font-mono font-bold text-sm">0.600 s</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-300">Computed Interval Velocity ($V_{int}$):</span>
+                            <span id="dix-res-vint" class="text-emerald-400 font-mono font-bold text-base">3122.50 m/s</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-slate-800/80 pt-2">
+                            <span class="text-slate-400">Estimated Layer Thickness ($\Delta z$):</span>
+                            <span id="dix-res-dz" class="text-cyan-300 font-mono font-bold text-sm">936.75 m</span>
+                        </div>
+                    </div>
+                    <div id="dix-error-msg" class="hidden bg-rose-950/60 border border-rose-800 text-rose-200 p-3 rounded-xl text-xs"></div>
+                </div>
+
+                <!-- Explanation & Graph -->
+                <div class="lg:col-span-7 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-4">
+                    <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-simple text-cyan-400"></i> RMS vs Interval Velocity Depth Profile
+                    </h3>
+                    <div class="h-[340px] relative bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <canvas id="chart-dix"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- TAB 3: LAYER THICKNESS -->
+        <section id="sec-thickness" class="tab-content hidden space-y-6">
+            <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-6">
+                <div class="border-b border-slate-800 pb-3">
+                    <h2 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-ruler-vertical"></i> Layer Thickness Calculator
+                    </h2>
+                    <p class="text-xs text-slate-400">Compute vertical thickness ($\Delta z$) from interval velocity and two-way traveltime</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300">Interval Velocity $V_{int}$ (m/s)</label>
+                        <input type="number" id="thick-vint" value="3000" step="50" min="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-cyan-400 font-mono outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300">Two-Way Traveltime $\Delta t$ (seconds)</label>
+                        <input type="number" id="thick-dt" value="0.50" step="0.01" min="0.001" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-cyan-400 font-mono outline-none focus:border-cyan-500">
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl text-center font-mono text-cyan-300 text-sm">
+                    $$\Delta z = V_{int} \times \left( \frac{\Delta t}{2} \right)$$
+                </div>
+
+                <div class="bg-emerald-950/30 border border-emerald-800/60 p-6 rounded-xl flex items-center justify-between">
+                    <div>
+                        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Calculated Thickness ($\Delta z$)</div>
+                        <div id="thick-result" class="text-3xl font-extrabold text-emerald-400 font-mono mt-1">750.00 m</div>
+                    </div>
+                    <div class="text-4xl text-emerald-500/30">
+                        <i class="fa-solid fa-arrows-up-down"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- TAB 4: MULTI-LAYER WORKFLOW SIMULATOR -->
+        <section id="sec-simulation" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Controls & Input Table -->
+                <div class="lg:col-span-6 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg space-y-5">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <h2 class="font-bold text-lg text-cyan-400 flex items-center gap-2">
+                                <i class="fa-solid fa-cubes"></i> Horizon Picking Table
+                            </h2>
+                            <p class="text-xs text-slate-400">Edit layer horizons to simulate subsurface velocity & depth model</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="addSimLayer()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> Add Layer
+                            </button>
+                            <button onclick="resetSimulationPresets()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs rounded-lg transition">
+                                Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900 text-slate-300 uppercase font-mono border-b border-slate-800">
+                                <tr>
+                                    <th class="p-2.5">Lithology</th>
+                                    <th class="p-2.5">TWT $t$ (s)</th>
+                                    <th class="p-2.5">$V_{rms}$ (m/s)</th>
+                                    <th class="p-2.5 text-right">$V_{int}$</th>
+                                    <th class="p-2.5 text-right">Depth $Z$</th>
+                                    <th class="p-2.5 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sim-table-body" class="divide-y divide-slate-800/60 font-mono">
+                                <!-- Dynamic rows populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Simulation Summary Cards -->
+                    <div class="grid grid-cols-3 gap-3 text-xs font-mono">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="text-slate-400 text-[10px] uppercase">Total Horizons</div>
+                            <div id="sim-sum-layers" class="text-cyan-400 font-bold text-base mt-0.5">4</div>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="text-slate-400 text-[10px] uppercase">Max TWT</div>
+                            <div id="sim-sum-maxt" class="text-amber-400 font-bold text-base mt-0.5">2.00 s</div>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                            <div class="text-slate-400 text-[10px] uppercase">Total Depth</div>
+                            <div id="sim-sum-depth" class="text-emerald-400 font-bold text-base mt-0.5">2840 m</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Visualizations -->
+                <div class="lg:col-span-6 space-y-6">
+                    <!-- Velocity Depth Chart -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                        <h3 class="font-bold text-slate-200 text-sm mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-cyan-400"></i> Multi-Layer Velocity Profile ($V_{rms}$ vs $V_{int}$)
+                        </h3>
+                        <div class="h-[250px] relative bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <canvas id="chart-sim"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Subsurface Canvas Model -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                        <h3 class="font-bold text-slate-200 text-sm mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-cyan-400"></i> Subsurface Lithology & Ray Refraction Cross-Section
+                        </h3>
+                        <div class="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+                            <canvas id="canvas-subsurface" class="w-full h-[280px] block"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500 gap-2">
+            <div>QDB2063 Seismic Methods & Geological Data Analysis • Universiti Teknologi PETRONAS</div>
+            <div class="flex gap-4">
+                <span>Reflection Seismology</span>
+                <span>•</span>
+                <span>Dix Inversion Engine</span>
+                <span>•</span>
+                <span>Velocity Profiling</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        const LITHOLOGIES = [
+            { name: "Unconsolidated Soil/Sand", color: "#f59e0b", defaultVint: 1800 },
+            { name: "Shale / Claystone", color: "#64748b", defaultVint: 2200 },
+            { name: "Sandstone Reservoir", color: "#eab308", defaultVint: 2800 },
+            { name: "Limestone / Carbonate", color: "#06b6d4", defaultVint: 4000 },
+            { name: "Anhydrite / Salt", color: "#a855f7", defaultVint: 4500 },
+            { name: "Basalt / Igneous", color: "#ef4444", defaultVint: 5500 }
+        ];
+
+        let isNmoApplied = false;
+        let chartDixInstance = null;
+        let chartSimInstance = null;
+
+        let simLayers = [
+            { lithoIdx: 0, t: 0.40, vrms: 1800 },
+            { lithoIdx: 1, t: 0.90, vrms: 2200 },
+            { lithoIdx: 2, t: 1.40, vrms: 2700 },
+            { lithoIdx: 3, t: 2.00, vrms: 3400 }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initNmoControls();
+            initDixControls();
+            initThicknessControls();
+            renderSimTable();
+            updateAllVisualizations();
+
+            window.addEventListener('resize', () => {
+                drawNmoCanvas();
+                drawSubsurfaceCanvas();
+            });
+        });
+
+        function triggerMathRender() {
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(`sec-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            setTimeout(() => {
+                triggerMathRender();
+                if (tabId === 'nmo') drawNmoCanvas();
+                if (tabId === 'dix') updateDixChart();
+                if (tabId === 'simulation') {
+                    updateSimChart();
+                    drawSubsurfaceCanvas();
+                }
+            }, 50);
+        }
+
+        function initNmoControls() {
+            const inputs = ['t0', 'offset', 'vnmo', 'xmax'];
+            inputs.forEach(id => {
+                const slider = document.getElementById(`input-${id}`);
+                slider.addEventListener('input', updateNmo);
+            });
+            updateNmo();
+        }
+
+        function toggleNmoCorrection() {
+            isNmoApplied = !isNmoApplied;
+            const btn = document.getElementById('btn-nmo-apply');
+            if (isNmoApplied) {
+                btn.classList.replace('bg-slate-800', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-cyan-600', 'hover:bg-emerald-500');
+                btn.innerHTML = `<i class="fa-solid fa-check mr-1"></i> NMO Corrected (Flat)`;
+            } else {
+                btn.classList.replace('bg-emerald-600', 'bg-slate-800');
+                btn.classList.replace('hover:bg-emerald-500', 'hover:bg-cyan-600');
+                btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Apply NMO Correction`;
+            }
+            drawNmoCanvas();
+        }
+
+        function updateNmo() {
+            const t0 = parseFloat(document.getElementById('input-t0').value);
+            const x = parseFloat(document.getElementById('input-offset').value);
+            const vnmo = parseFloat(document.getElementById('input-vnmo').value);
+            const xmax = parseFloat(document.getElementById('input-xmax').value);
+
+            document.getElementById('val-t0').innerText = t0.toFixed(2) + ' s';
+            document.getElementById('val-offset').innerText = x.toFixed(0) + ' m';
+            document.getElementById('val-vnmo').innerText = vnmo.toFixed(0) + ' m/s';
+            document.getElementById('val-xmax').innerText = xmax.toFixed(0) + ' m';
+
+            const tx = Math.sqrt(t0 * t0 + (x * x) / (vnmo * vnmo));
+            const dtNmo = tx - t0;
+            const stretch = (dtNmo / t0) * 100;
+
+            document.getElementById('res-tx').innerText = tx.toFixed(4) + ' s';
+            document.getElementById('res-dtnmo').innerText = (dtNmo * 1000).toFixed(2) + ' ms';
+            document.getElementById('res-stretch').innerText = stretch.toFixed(2) + ' %';
+
+            drawNmoCanvas();
+        }
+
+        function drawNmoCanvas() {
+            const canvas = document.getElementById('canvas-cmp');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio || 800;
+            canvas.height = rect.height * window.devicePixelRatio || 400;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const t0 = parseFloat(document.getElementById('input-t0').value);
+            const currentX = parseFloat(document.getElementById('input-offset').value);
+            const vnmo = parseFloat(document.getElementById('input-vnmo').value);
+            const xmax = parseFloat(document.getElementById('input-xmax').value);
+
+            const midX = w * 0.48;
+
+            // RAYPATH GEOMETRY
+            ctx.save();
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, midX, h);
+
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, midX, h);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = `${11 * window.devicePixelRatio}px sans-serif`;
+            ctx.fillText("RAYPATH GEOMETRY", 15 * window.devicePixelRatio, 25 * window.devicePixelRatio);
+
+            const surfY = 60 * window.devicePixelRatio;
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(20, surfY);
+            ctx.lineTo(midX - 20, surfY);
+            ctx.stroke();
+
+            const maxZScale = 4000;
+            const zCalc = (vnmo * t0) / 2;
+            const refY = surfY + Math.min((zCalc / maxZScale) * (h - surfY - 40), h - surfY - 40);
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(20, refY);
+            ctx.lineTo(midX - 20, refY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`Reflector Depth z = ${zCalc.toFixed(0)} m`, 20, refY - 8);
+
+            const marginX = 40 * window.devicePixelRatio;
+            const usableW = midX - marginX * 2;
+            const srcX = marginX;
+            const recX = marginX + (currentX / xmax) * usableW;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(srcX, surfY, 6 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#f87171';
+            ctx.fillText("S (0m)", srcX - 15, surfY - 12);
+
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(recX, surfY, 6 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#34d399';
+            ctx.fillText(`R (${currentX}m)`, recX - 20, surfY - 12);
+
+            const midPointX = (srcX + recX) / 2;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(srcX, surfY);
+            ctx.lineTo(midPointX, refY);
+            ctx.lineTo(recX, surfY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(midPointX, refY, 4 * window.devicePixelRatio, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            // SYNTHETIC CMP GATHER
+            ctx.save();
+            const rightStart = midX + 10;
+            const rightW = w - rightStart;
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(rightStart, 0, rightW, h);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = `${11 * window.devicePixelRatio}px sans-serif`;
+            ctx.fillText("SYNTHETIC CMP GATHER", rightStart + 15, 25 * window.devicePixelRatio);
+
+            const gatherPaddingX = 40 * window.devicePixelRatio;
+            const gatherPaddingY = 50 * window.devicePixelRatio;
+            const gatherW = rightW - gatherPaddingX * 2;
+            const gatherH = h - gatherPaddingY - 30 * window.devicePixelRatio;
+
+            const maxTDisplay = 4.0;
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(rightStart + gatherPaddingX, gatherPaddingY);
+            ctx.lineTo(rightStart + gatherPaddingX, gatherPaddingY + gatherH);
+            ctx.stroke();
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = `${9 * window.devicePixelRatio}px monospace`;
+            for (let tStep = 0; tStep <= maxTDisplay; tStep += 1.0) {
+                const py = gatherPaddingY + (tStep / maxTDisplay) * gatherH;
+                ctx.fillText(`${tStep.toFixed(1)}s`, rightStart + 5, py + 4);
+                ctx.strokeStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.moveTo(rightStart + gatherPaddingX, py);
+                ctx.lineTo(rightStart + gatherPaddingX + gatherW, py);
+                ctx.stroke();
+            }
+
+            const numTraces = 12;
+            for (let i = 0; i < numTraces; i++) {
+                const trOffset = (i / (numTraces - 1)) * xmax;
+                const trX = rightStart + gatherPaddingX + (i / (numTraces - 1)) * gatherW;
+
+                ctx.strokeStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.moveTo(trX, gatherPaddingY);
+                ctx.lineTo(trX, gatherPaddingY + gatherH);
+                ctx.stroke();
+
+                let arrivalT = Math.sqrt(t0 * t0 + (trOffset * trOffset) / (vnmo * vnmo));
+                if (isNmoApplied) {
+                    arrivalT = t0;
+                }
+
+                const waveY = gatherPaddingY + (arrivalT / maxTDisplay) * gatherH;
+                const isSelected = Math.abs(trOffset - currentX) < (xmax / numTraces);
+                const amp = isSelected ? 18 * window.devicePixelRatio : 12 * window.devicePixelRatio;
+
+                ctx.beginPath();
+                ctx.strokeStyle = isSelected ? '#38bdf8' : '#94a3b8';
+                ctx.lineWidth = isSelected ? 2.5 : 1.2;
+
+                ctx.moveTo(trX, waveY - 25);
+                ctx.bezierCurveTo(trX + amp, waveY - 10, trX - amp * 1.2, waveY + 10, trX, waveY + 25);
+                ctx.stroke();
+
+                ctx.fillStyle = isSelected ? 'rgba(56, 189, 248, 0.4)' : 'rgba(148, 163, 184, 0.25)';
+                ctx.beginPath();
+                ctx.moveTo(trX, waveY - 25);
+                ctx.bezierCurveTo(trX + amp, waveY - 10, trX, waveY, trX, waveY);
+                ctx.closePath();
+                ctx.fill();
+
+                if (i % 2 === 0) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillText(`${trOffset.toFixed(0)}m`, trX - 10, gatherPaddingY + gatherH + 15);
+                }
+            }
+
+            if (!isNmoApplied) {
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let px = 0; px <= gatherW; px += 2) {
+                    const offVal = (px / gatherW) * xmax;
+                    const curveT = Math.sqrt(t0 * t0 + (offVal * offVal) / (vnmo * vnmo));
+                    const cy = gatherPaddingY + (curveT / maxTDisplay) * gatherH;
+                    const cx = rightStart + gatherPaddingX + px;
+                    if (px === 0) ctx.moveTo(cx, cy);
+                    else ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = '#10b981';
+                ctx.lineWidth = 2.5;
+                const flatY = gatherPaddingY + (t0 / maxTDisplay) * gatherH;
+                ctx.beginPath();
+                ctx.moveTo(rightStart + gatherPaddingX, flatY);
+                ctx.lineTo(rightStart + gatherPaddingX + gatherW, flatY);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function initDixControls() {
+            ['dix-t1', 'dix-t2', 'dix-vrms1', 'dix-vrms2'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateDix);
+            });
+            updateDix();
+        }
+
+        function updateDix() {
+            const t1 = parseFloat(document.getElementById('dix-t1').value);
+            const t2 = parseFloat(document.getElementById('dix-t2').value);
+            const v1 = parseFloat(document.getElementById('dix-vrms1').value);
+            const v2 = parseFloat(document.getElementById('dix-vrms2').value);
+
+            const errBox = document.getElementById('dix-error-msg');
+            const resCard = document.getElementById('dix-result-card');
+
+            if (t2 <= t1) {
+                errBox.classList.remove('hidden');
+                errBox.innerText = "Error: Base traveltime (t₂) must be strictly greater than Top traveltime (t₁).";
+                resCard.classList.add('opacity-40');
+                return;
+            }
+
+            const numerator = (v2 * v2 * t2) - (v1 * v1 * t1);
+            const dt = t2 - t1;
+
+            if (numerator <= 0) {
+                errBox.classList.remove('hidden');
+                errBox.innerText = "Error: Non-physical V_rms configuration. Interval velocity square is negative (imaginary result). Check input velocities.";
+                resCard.classList.add('opacity-40');
+                return;
+            }
+
+            errBox.classList.add('hidden');
+            resCard.classList.remove('opacity-40');
+
+            const vint = Math.sqrt(numerator / dt);
+            const dz = vint * (dt / 2);
+
+            document.getElementById('dix-res-dt').innerText = dt.toFixed(3) + ' s';
+            document.getElementById('dix-res-vint').innerText = vint.toFixed(2) + ' m/s';
+            document.getElementById('dix-res-dz').innerText = dz.toFixed(2) + ' m';
+
+            updateDixChart(t1, t2, v1, v2, vint);
+        }
+
+        function updateDixChart(t1 = 1.0, t2 = 1.6, v1 = 2000, v2 = 2500, vint = 3122) {
+            const ctx = document.getElementById('chart-dix');
+            if (!ctx) return;
+
+            const dataVrms = [
+                { x: 1500, y: 0 },
+                { x: v1, y: t1 },
+                { x: v2, y: t2 }
+            ];
+
+            const dataVint = [
+                { x: v1, y: 0 },
+                { x: v1, y: t1 },
+                { x: vint, y: t1 },
+                { x: vint, y: t2 }
+            ];
+
+            if (chartDixInstance) {
+                chartDixInstance.destroy();
+            }
+
+            chartDixInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'RMS Velocity (V_rms)',
+                            data: dataVrms,
+                            borderColor: '#38bdf8',
+                            backgroundColor: '#38bdf8',
+                            borderWidth: 2,
+                            stepped: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Interval Velocity (V_int)',
+                            data: dataVint,
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            borderWidth: 3,
+                            stepped: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Velocity (m/s)', color: '#94a3b8' },
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            reverse: true,
+                            title: { display: true, text: 'Two-Way Traveltime TWT (s)', color: '#94a3b8' },
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+        }
+
+        function initThicknessControls() {
+            ['thick-vint', 'thick-dt'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateThickness);
+            });
+            updateThickness();
+        }
+
+        function updateThickness() {
+            const vint = parseFloat(document.getElementById('thick-vint').value) || 0;
+            const dt = parseFloat(document.getElementById('thick-dt').value) || 0;
+            const dz = vint * (dt / 2.0);
+
+            document.getElementById('thick-result').innerText = dz.toFixed(2) + ' m';
+        }
+
+        function renderSimTable() {
+            const tbody = document.getElementById('sim-table-body');
+            tbody.innerHTML = '';
+
+            let prevT = 0;
+            let prevVrms = 0;
+            let cumDepth = 0;
+
+            simLayers.forEach((layer, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-900/60 transition";
+
+                let vint = layer.vrms;
+                let dt = layer.t - prevT;
+                
+                if (idx > 0) {
+                    const num = (layer.vrms * layer.vrms * layer.t) - (prevVrms * prevVrms * prevT);
+                    if (num > 0 && dt > 0) {
+                        vint = Math.sqrt(num / dt);
+                    } else {
+                        vint = 0;
+                    }
+                }
+
+                const dz = vint * (dt / 2);
+                cumDepth += dz;
+
+                layer.vintCalc = vint;
+                layer.dzCalc = dz;
+                layer.depthCalc = cumDepth;
+
+                let lithoOptions = LITHOLOGIES.map((l, lIdx) => 
+                    `<option value="${lIdx}" ${lIdx === layer.lithoIdx ? 'selected' : ''}>${l.name}</option>`
+                ).join('');
+
+                tr.innerHTML = `
+                    <td class="p-2">
+                        <select onchange="updateSimLayer(${idx}, 'lithoIdx', this.value)" class="bg-slate-900 border border-slate-700 rounded p-1 text-slate-200 outline-none w-full">
+                            ${lithoOptions}
+                        </select>
+                    </td>
+                    <td class="p-2">
+                        <input type="number" step="0.05" value="${layer.t.toFixed(2)}" onchange="updateSimLayer(${idx}, 't', this.value)" class="bg-slate-900 border border-slate-700 text-cyan-400 p-1 rounded w-20 outline-none">
+                    </td>
+                    <td class="p-2">
+                        <input type="number" step="50" value="${layer.vrms.toFixed(0)}" onchange="updateSimLayer(${idx}, 'vrms', this.value)" class="bg-slate-900 border border-slate-700 text-amber-400 p-1 rounded w-24 outline-none">
+                    </td>
+                    <td class="p-2 text-right font-bold ${vint > 0 ? 'text-emerald-400' : 'text-rose-400'}">
+                        ${vint > 0 ? vint.toFixed(0) + ' m/s' : 'ERR'}
+                    </td>
+                    <td class="p-2 text-right font-bold text-cyan-300">
+                        ${cumDepth.toFixed(0)} m
+                    </td>
+                    <td class="p-2 text-center">
+                        <button onclick="removeSimLayer(${idx})" class="text-rose-400 hover:text-rose-300 p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+
+                prevT = layer.t;
+                prevVrms = layer.vrms;
+            });
+
+            document.getElementById('sim-sum-layers').innerText = simLayers.length;
+            document.getElementById('sim-sum-maxt').innerText = (simLayers.length ? simLayers[simLayers.length - 1].t.toFixed(2) : '0') + ' s';
+            document.getElementById('sim-sum-depth').innerText = cumDepth.toFixed(0) + ' m';
+
+            updateSimChart();
+            drawSubsurfaceCanvas();
+        }
+
+        function addSimLayer() {
+            const lastT = simLayers.length > 0 ? simLayers[simLayers.length - 1].t : 0;
+            const lastVrms = simLayers.length > 0 ? simLayers[simLayers.length - 1].vrms : 1500;
+            
+            simLayers.push({
+                lithoIdx: (simLayers.length) % LITHOLOGIES.length,
+                t: parseFloat((lastT + 0.50).toFixed(2)),
+                vrms: lastVrms + 400
+            });
+            renderSimTable();
+        }
+
+        function removeSimLayer(idx) {
+            if (simLayers.length <= 1) return;
+            simLayers.splice(idx, 1);
+            renderSimTable();
+        }
+
+        function updateSimLayer(idx, key, val) {
+            simLayers[idx][key] = key === 'lithoIdx' ? parseInt(val) : parseFloat(val);
+            simLayers.sort((a, b) => a.t - b.t);
+            renderSimTable();
+        }
+
+        function resetSimulationPresets() {
+            simLayers = [
+                { lithoIdx: 0, t: 0.40, vrms: 1800 },
+                { lithoIdx: 1, t: 0.90, vrms: 2200 },
+                { lithoIdx: 2, t: 1.40, vrms: 2700 },
+                { lithoIdx: 3, t: 2.00, vrms: 3400 }
+            ];
+            renderSimTable();
+        }
+
+        function updateSimChart() {
+            const ctx = document.getElementById('chart-sim');
+            if (!ctx) return;
+
+            const vrmsPoints = [{ x: simLayers[0]?.vrms || 1500, y: 0 }];
+            const vintPoints = [];
+
+            let prevT = 0;
+            simLayers.forEach(l => {
+                vrmsPoints.push({ x: l.vrms, y: l.t });
+                
+                vintPoints.push({ x: l.vintCalc, y: prevT });
+                vintPoints.push({ x: l.vintCalc, y: l.t });
+
+                prevT = l.t;
+            });
+
+            if (chartSimInstance) {
+                chartSimInstance.destroy();
+            }
+
+            chartSimInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'RMS Velocity V_rms',
+                            data: vrmsPoints,
+                            borderColor: '#38bdf8',
+                            backgroundColor: '#38bdf8',
+                            borderWidth: 2,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'Interval Velocity V_int',
+                            data: vintPoints,
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            borderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Velocity (m/s)', color: '#94a3b8' },
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            reverse: true,
+                            title: { display: true, text: 'TWT Time (s)', color: '#94a3b8' },
+                            grid: { color: '#1e293b' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } }
+                    }
+                }
+            });
+        }
+
+        function drawSubsurfaceCanvas() {
+            const canvas = document.getElementById('canvas-subsurface');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio || 600;
+            canvas.height = rect.height * window.devicePixelRatio || 280;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            if (simLayers.length === 0) return;
+
+            const totalDepth = simLayers[simLayers.length - 1].depthCalc || 1000;
+            const paddingLeft = 60 * window.devicePixelRatio;
+            const paddingTop = 20 * window.devicePixelRatio;
+            const usableH = h - paddingTop - 20 * window.devicePixelRatio;
+            const usableW = w - paddingLeft - 20 * window.devicePixelRatio;
+
+            let prevY = paddingTop;
+
+            simLayers.forEach((layer, idx) => {
+                const layerY = paddingTop + (layer.depthCalc / totalDepth) * usableH;
+                const layerHeight = layerY - prevY;
+
+                const litho = LITHOLOGIES[layer.lithoIdx];
+                ctx.fillStyle = litho.color + '33';
+                ctx.fillRect(paddingLeft, prevY, usableW, layerHeight);
+
+                ctx.strokeStyle = litho.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(paddingLeft, layerY);
+                ctx.lineTo(paddingLeft + usableW, layerY);
+                ctx.stroke();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = `bold ${10 * window.devicePixelRatio}px sans-serif`;
+                ctx.fillText(`${litho.name}`, paddingLeft + 15, prevY + Math.max(15, layerHeight / 2));
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = `${9 * window.devicePixelRatio}px monospace`;
+                ctx.fillText(`V_int = ${layer.vintCalc.toFixed(0)} m/s | Δz = ${layer.dzCalc.toFixed(0)}m`, paddingLeft + 15, prevY + Math.max(28, layerHeight / 2 + 12));
+
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(`${layer.depthCalc.toFixed(0)}m`, 10, layerY + 4);
+
+                prevY = layerY;
+            });
+
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, paddingTop);
+            ctx.lineTo(paddingLeft, paddingTop + usableH);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+
+            let rayX = paddingLeft + usableW * 0.2;
+            let rayY = paddingTop;
+            let angle = 0.35;
+
+            ctx.moveTo(rayX, rayY);
+
+            let lastY = paddingTop;
+            simLayers.forEach((layer, idx) => {
+                const nextY = paddingTop + (layer.depthCalc / totalDepth) * usableH;
+                const layerThickness = nextY - lastY;
+
+                const dx = Math.tan(angle) * layerThickness;
+                rayX += dx;
+                rayY = nextY;
+
+                ctx.lineTo(rayX, rayY);
+
+                if (idx < simLayers.length - 1) {
+                    const v1 = layer.vintCalc;
+                    const v2 = simLayers[idx + 1].vintCalc;
+                    const sinTheta2 = Math.sin(angle) * (v2 / v1);
+                    if (Math.abs(sinTheta2) < 0.98) {
+                        angle = Math.asin(sinTheta2);
+                    }
+                }
+                lastY = nextY;
+            });
+            ctx.stroke();
+        }
+
+        function updateAllVisualizations() {
+            drawNmoCanvas();
+            updateDix();
+            updateThickness();
+            renderSimTable();
+        }
+    </script>
+</body>
+</html>
